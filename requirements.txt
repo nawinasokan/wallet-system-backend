@@ -1,0 +1,12 @@
+Django>=6.1,<6.2
+djangorestframework>=3.18,<3.19
+drf-spectacular>=0.30,<0.31
+psycopg[binary]>=3.3,<3.4
+PyJWT>=2.15,<3
+celery>=5.6,<5.7
+redis>=8.1,<9
+requests>=2.34,<3
+gunicorn>=26,<27
+# tests
+pytest>=9,<10
+pytest-django>=4.14,<5

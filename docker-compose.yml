@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: wallet
+      POSTGRES_PASSWORD: wallet
+      POSTGRES_DB: wallet
+    ports:
+      - "${DB_PORT:-5435}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wallet -d wallet"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - walletdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment: &env
+      DATABASE_URL: postgres://wallet:wallet@db:5432/wallet
+      CELERY_BROKER_URL: redis://redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me}
+      ENABLE_DEV_TOKENS: "true"          # demo only: lets Swagger mint tokens. Never enable in production.
+      API_KEYS: ${API_KEYS:-demo-admin-key:admin-1:admin,demo-user-key:user-1:user}
+      BANK_WEBHOOK_SECRET: ${BANK_WEBHOOK_SECRET:-dev-bank-secret}
+      BANK_CALLBACK_URL: http://api:8000/bank/callbacks
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 4"
+    ports:
+      - "8000:8000"
+
+  worker:
+    build: .
+    depends_on:
+      api: { condition: service_started }
+    environment: *env
+    command: celery -A config worker --loglevel=info --concurrency=4
+
+  beat:
+    build: .
+    depends_on:
+      api: { condition: service_started }
+    environment: *env
+    command: celery -A config beat --loglevel=info
+
+volumes:
+  walletdata:
