@@ -1,0 +1,22 @@
+{
+  "rules": [
+    {
+      "id": "velocity-5-per-10min",
+      "type": "velocity_outgoing_transfers",
+      "action": "block",
+      "params": { "maxTransfers": 5, "windowMinutes": 10 }
+    },
+    {
+      "id": "new-wallet-large-amount",
+      "type": "new_wallet_large_amount",
+      "action": "flag",
+      "params": { "amountAbove": 100000, "walletAgeDays": 7 }
+    },
+    {
+      "id": "withdraw-after-large-topup",
+      "type": "withdrawal_after_large_topup",
+      "action": "flag",
+      "params": { "topupAtLeast": 500000, "windowMinutes": 60 }
+    }
+  ]
+}
